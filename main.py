@@ -1,16 +1,24 @@
-# This is a sample Python script.
-
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+from binance import Client
+import configparser
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+config = configparser.ConfigParser()
+config.read('config/main.ini')
+candles = []
 
+bin_client = Client(config["DEFAULT"]["api_key"], config["DEFAULT"]["api_secret"])
+for kline in bin_client.get_historical_klines_generator("BTCUSDT", Client.KLINE_INTERVAL_1DAY, "1 month ago UTC"):
+    # print(kline)
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+    candles.append({"open_time": kline[0],
+                    "open": kline[1],
+                    "max": kline[2],
+                    "min": kline[3],
+                    "close": kline[4],
+                    "volume": kline[5],
+                    "close_time": kline[6],
+                    "coin_vol": kline[7],
+                    "num_trades": kline[8]})
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+for candle in candles:
+    print(str(candle))
