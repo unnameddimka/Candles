@@ -1,48 +1,10 @@
 from datetime import datetime
-
 from binance import Client
 import configparser
 
-
-class Transaction:
-    direction: str = "BUY"
-    amount: float = 10
-    candle = {}
-
-    def __init__(self, dirctn: str, amt: float, cndl):
-        self.direction = dirctn
-        self.amount = amt
-        self.candle = cndl
-
-
-class Strategy:
-
-    @staticmethod
-    def evaluate(candle_scope: []):
-        last_candle = candle_scope[-1]
-        if last_candle["open"] < last_candle["close"]:
-            # the candle is green
-            return Transaction("BUY", 10, last_candle)
-        else:
-            return Transaction("SELL", 10, last_candle)
-
-
-class MegaStrata(Strategy):
-
-    @staticmethod
-    def evaluate(candle_scope: []):
-        if len(candle_scope) < 3:
-            return None
-        if (candle_scope[-1]["open"] < candle_scope[-1]["close"] and
-                candle_scope[-2]["open"] < candle_scope[-2]["close"] and
-                candle_scope[-3]["open"] < candle_scope[-3]["close"]):
-            return Transaction("BUY", 10, candle_scope[-1])
-        elif (candle_scope[-1]["open"] > candle_scope[-1]["close"] and
-                candle_scope[-2]["open"] > candle_scope[-2]["close"] and
-                candle_scope[-3]["open"] > candle_scope[-3]["close"]):
-            return Transaction("SELL", 10, candle_scope[-1])
-        else:
-            return None
+from strats import Strategy
+import strats
+from transaction import Transaction
 
 
 class Account:
@@ -87,6 +49,8 @@ class Account:
         asset_value = self.asset * float(cdl["close"])
         return asset_value + self.usd
 
+#   main code. :)
+
 
 config = configparser.ConfigParser()
 config.read('config/main.ini')
@@ -105,25 +69,18 @@ for kline in bin_client.get_historical_klines_generator("BTCUSDT", Client.KLINE_
                     "close_time": kline[6],
                     "coin_vol": kline[7],
                     "num_trades": kline[8]})
-count = 0
 
-acc = Account()
-acc.strat = MegaStrata()
-for candle in candles:
-    count += 1
-    result = acc.strat.evaluate(candles[:count])
-    if result is not None:
-        acc.commit_tran(result)
+
+for strat in strats.get_strat_array():
+    print('--------starting testing strategy "'+strat.name + '"')
+    acc = Account()
+    acc.strat = strat
+    count = 0
+    for candle in candles:
+        count += 1
+        result = acc.strat.evaluate(candles[:count])
+        if result is not None:
+            acc.commit_tran(result)
     # print(str(candle))
-mega_result = str(acc.evaluate(candles[-1]))
-
-print("-----------------")
-
-# acc = Account()
-# for candle in candles:
-#    count += 1
-#    result = acc.strat.evaluate(candles[:count])
-#    if result is not None:
-#        acc.commit_tran(result)
-#    # print(str(candle))
-print("---- final MegaStrata account value = " + mega_result)
+    mega_result = str(acc.evaluate(candles[-1]))
+    print('--------strategy "'+strat.name+'" is '+mega_result)
