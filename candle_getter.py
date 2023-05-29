@@ -1,7 +1,9 @@
 import logging
 import sys
 import requests
-import json
+from json import JSONEncoder
+
+
 logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
 rootLogger = logging.getLogger()
 consoleHandler = logging.StreamHandler(sys.stdout)
@@ -10,6 +12,9 @@ rootLogger.addHandler(consoleHandler)
 rootLogger.setLevel(logging.INFO)
 
 
+class CandleEncoder(JSONEncoder):
+    def default(self, o):
+        return o.__dict__
 class Candle:
     def __init__(self, dict):
         self.open = 0
@@ -19,6 +24,7 @@ class Candle:
         self.timestamp = 0
         self.volume = 0
         self.__dict__ = dict
+
 
 
 class CandleGetter:
@@ -43,5 +49,7 @@ getters['bitly'] = CandleGetter()
 getters['bitly'].get_candles = get_candles_bitly
 
 if __name__ == '__main__':
+
+
     cg = getters['bitly']
     cg.get_candles('btcusd',86400,10)
