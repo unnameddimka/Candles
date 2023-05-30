@@ -15,6 +15,8 @@ rootLogger.setLevel(logging.INFO)
 class CandleEncoder(JSONEncoder):
     def default(self, o):
         return o.__dict__
+
+
 class Candle:
     def __init__(self, dict):
         self.open = 0
@@ -26,7 +28,6 @@ class Candle:
         self.__dict__ = dict
 
 
-
 class CandleGetter:
     def __init__(self):
         rootLogger.info('CandleGetter created')
@@ -34,7 +35,7 @@ class CandleGetter:
         pass
 
 
-def get_candles_bitly(pair,step, limit ):
+def get_candles_bitstamp(pair,step, limit ):
     rootLogger.info(f'getting candles from bitly pair:{pair},step:{step},limit:{limit}')
     url = f"https://www.bitstamp.net/api/v2/ohlc/{pair}/?step={step}&limit={limit}"
     data = requests.get(url)
@@ -45,11 +46,10 @@ def get_candles_bitly(pair,step, limit ):
 
 
 getters = dict()
-getters['bitly'] = CandleGetter()
-getters['bitly'].get_candles = get_candles_bitly
+getters['bitstamp'] = CandleGetter()
+getters['bitstamp'].get_candles = get_candles_bitstamp
 
 if __name__ == '__main__':
 
-
-    cg = getters['bitly']
+    cg = getters['bitstamp']
     cg.get_candles('btcusd',86400,10)

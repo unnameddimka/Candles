@@ -14,7 +14,7 @@ rootLogger.setLevel(logging.INFO)
 
 
 if __name__ == '__main__':
-    cg = candle_getter.getters['bitly']
+    cg = candle_getter.getters['bitstamp']
     candle_data = cg.get_candles('btcusd', 86400,500)
 
     candle_json_dict_data = {
