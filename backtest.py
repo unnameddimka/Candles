@@ -7,7 +7,42 @@ import datetime
 from backtesting import Backtest
 from backtesting import Strategy
 from backtesting.lib import crossover
+from backtesting.lib import TrailingStrategy
 from backtesting.test import GOOG
+
+
+class TrailingStopper(TrailingStrategy):
+    sl_atr_range = 1
+    atr_window = 14
+    sma_trend_window = 200
+    trend_confirmation_offset = 1000
+
+    def init(self):
+        super().init()
+        self.atr = self.I(
+            ta.atr,
+            pd.Series(self.data.High),
+            pd.Series(self.data.Low),
+            pd.Series(self.data.Close),
+            self.atr_window
+        )
+        self.sma_trend = self.I(
+            ta.sma,
+            pd.Series(self.data.Close),
+            self.sma_trend_window
+
+        )
+
+    def next(self):
+        super().next()
+        self.set_trailing_sl(self.sl_atr_range)
+        if self.position:
+            pass
+        else:
+            if crossover(self.data.Close, self.sma_trend+self.trend_confirmation_offset):
+                self.buy()
+            if crossover(self.sma_trend-self.trend_confirmation_offset,self.data.Close):
+                self.sell()
 
 
 class RsiOscillator(Strategy):
@@ -52,14 +87,21 @@ def get_candles_bitstamp(pair, step, limit):
 
 if __name__ == '__main__':
 
-    BTCUSDT = get_candles_bitstamp('btcusd', 86400, 500)
+    BTCUSDT = get_candles_bitstamp('btcusd', 86400, 1000)
     print(BTCUSDT)
-    bt = Backtest(BTCUSDT, RsiOscillator, cash=10_000_000, commission=.002)
+    bt = Backtest(BTCUSDT, TrailingStopper, cash=10_000_000, commission=.002)
     stats = bt.optimize(
-        upper_bound=range(50, 90, 5),
-        lower_bound=range(20, 50, 5),
-        rsi_window=range(10, 30, 2),
+        sl_atr_range = range(1, 5, 1),
+        atr_window = range(10, 30, 5),
+        sma_trend_window = range(30, 50, 10),
+        trend_confirmation_offset = range(100, 2000, 100),
         maximize='Return [%]'
-    )
-    # stats = bt.run()
+         #
+         # upper_bound=range(50, 90, 5),
+         # lower_bound=range(20, 50, 5),
+         # rsi_window=range(10, 30, 2),
+         # maximize='Return [%]'
+     )
+    #stats = bt.run()
     bt.plot()
+    print(stats)
