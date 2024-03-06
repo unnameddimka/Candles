@@ -1,21 +1,22 @@
-import pandas
 import pandas_ta as ta
 import pandas as pd
-import requests
-import datetime
+
 
 from backtesting import Backtest
 from backtesting import Strategy
 from backtesting.lib import crossover
 from backtesting.lib import TrailingStrategy
-from backtesting.test import GOOG
+from data_sources import get_candles_bitstamp
 
 
 class TrailingStopper(TrailingStrategy):
+    pair_name = 'Unknown'
     sl_atr_range = 1
     atr_window = 14
     sma_trend_window = 200
-    trend_confirmation_offset = 1000
+    trend_confirmation_offset = 1
+    offset_unit_size = 0.0001
+    deal_percent = 10
 
     def init(self):
         super().init()
@@ -39,10 +40,10 @@ class TrailingStopper(TrailingStrategy):
         if self.position:
             pass
         else:
-            if crossover(self.data.Close, self.sma_trend+self.trend_confirmation_offset):
-                self.buy()
-            if crossover(self.sma_trend-self.trend_confirmation_offset,self.data.Close):
-                self.sell()
+            if crossover(self.data.Close, self.sma_trend+self.trend_confirmation_offset*self.offset_unit_size):
+                self.buy(size=self.deal_percent/100)
+            if crossover(self.sma_trend-self.trend_confirmation_offset*self.offset_unit_size, self.data.Close):
+                self.sell(size=self.deal_percent/100)
 
 
 class RsiOscillator(Strategy):
@@ -64,44 +65,65 @@ class RsiOscillator(Strategy):
             self.buy()
 
 
-def get_candles_bitstamp(pair, step, limit):
-
-    url = f"https://www.bitstamp.net/api/v2/ohlc/{pair}/?step={step}&limit={limit}"
-    data = requests.get(url)
-    js_result = data.json()
-    ohlc_arr = js_result['data']['ohlc']
-    ohlc_dict = {
-    'year' : [datetime.date.fromtimestamp(int(s['timestamp'])).year for s in ohlc_arr],
-    'month': [datetime.date.fromtimestamp(int(s['timestamp'])).month for s in ohlc_arr],
-    'day':   [datetime.date.fromtimestamp(int(s['timestamp'])).day for s in ohlc_arr],
-    'Open' : [float(s['open']) for s in ohlc_arr],
-    'High' : [float(s['high']) for s in ohlc_arr],
-    'Low'  : [float(s['low']) for s in ohlc_arr],
-    'Close': [float(s['close']) for s in ohlc_arr],
-    'Volume':[float(s['volume']) for s in ohlc_arr]
-    }
-    df = pandas.DataFrame(ohlc_dict)
-    df.index = pd.to_datetime(df[['day', 'month', 'year']])
-    return df
-
-
 if __name__ == '__main__':
+    #
+    # ADABTC = get_candles_bitstamp('adabtc', 86400, 1000)
+    # bt = Backtest(ADABTC, TrailingStopper, cash=10, commission=.002)
+    # stats = bt.optimize(
+    #     pair_name='adabtc',
+    #     sl_atr_range=range(1, 5, 1),
+    #     atr_window=range(1, 10, 1),
+    #     sma_trend_window=range(25, 100, 10),
+    #     trend_confirmation_offset=range(1, 100, 1),
+    #     maximize='Return [%]',
+    #     offset_unit_size=0.0000001
+    # )
+    # bt.plot()
+    # print(stats)
+
+    # XRPBTC = get_candles_bitstamp('xrpbtc', 86400, 1000)
+    # bt = Backtest(XRPBTC, TrailingStopper, cash=10, commission=.002)
+    # stats = bt.optimize(
+    #     pair_name='xrpbtc',
+    #     sl_atr_range=range(1, 5, 1),
+    #     atr_window=range(5, 15, 1),
+    #     sma_trend_window=range(25, 35, 5),
+    #     trend_confirmation_offset=range(1, 100, 1),
+    #     maximize='Return [%]',
+    #     offset_unit_size=0.000001
+    # )
+    # bt.plot()
+    # print(stats)
+    #
+    # ETHBTC = get_candles_bitstamp('ethbtc', 86400, 1000)
+    # bt = Backtest(ETHBTC, TrailingStopper, cash=10, commission=.002)
+    # stats = bt.optimize(
+    #     pair_name='ethbtc',
+    #     sl_atr_range=range(1, 5, 1),
+    #     atr_window=range(10, 30, 5),
+    #     sma_trend_window=range(30, 50, 10),
+    #     trend_confirmation_offset=range(1, 100, 1),
+    #     maximize='Return [%]',
+    #     offset_unit_size = 0.0001
+    # )
+    # bt.plot()
+    # print(stats)
 
     BTCUSDT = get_candles_bitstamp('btcusd', 86400, 1000)
     print(BTCUSDT)
     bt = Backtest(BTCUSDT, TrailingStopper, cash=10_000_000, commission=.002)
     stats = bt.optimize(
+        pair_name='btcusd',
         sl_atr_range = range(1, 5, 1),
         atr_window = range(10, 30, 5),
         sma_trend_window = range(30, 50, 10),
+        deal_percent = range(5,50,5),
         trend_confirmation_offset = range(100, 2000, 100),
-        maximize='Return [%]'
-         #
-         # upper_bound=range(50, 90, 5),
-         # lower_bound=range(20, 50, 5),
-         # rsi_window=range(10, 30, 2),
-         # maximize='Return [%]'
+        maximize='Return [%]',
+        offset_unit_size = 1
      )
-    #stats = bt.run()
+    # stats = bt.run()
     bt.plot()
     print(stats)
+    #
+

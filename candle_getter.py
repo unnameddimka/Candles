@@ -18,14 +18,18 @@ class CandleEncoder(JSONEncoder):
 
 
 class Candle:
-    def __init__(self, dict):
-        self.open = 0
-        self.close = 0
-        self.high = 0
-        self.low = 0
-        self.timestamp = 0
-        self.volume = 0
-        self.__dict__ = dict
+    def __init__(self, dict=None):
+        if dict != None:
+            self.__dict__ = dict
+        else:
+            self.open = 0
+            self.close = 0
+            self.high = 0
+            self.low = 0
+            self.timestamp = 0
+            self.volume = 0
+
+
 
 
 class CandleGetter:
